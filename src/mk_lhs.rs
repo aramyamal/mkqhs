@@ -81,7 +81,10 @@ pub fn eval<const K: usize>(
         ));
     }
 
-    let gamma_bases: Vec<_> = sign_shares.iter().map(|s| s.gamma().into_affine()).collect();
+    let gamma_bases: Vec<_> = sign_shares
+        .iter()
+        .map(|s| s.gamma().into_affine())
+        .collect();
     let gamma = G1::msm_unchecked(&gamma_bases, coeffs);
 
     let (ord_ids, groups) = organize(labels);
@@ -114,7 +117,7 @@ pub fn verify<const K: usize>(
         id_to_j.insert(id, j);
     }
 
-    // initialize A_j = g1_gen * mu_j
+    // initialize $A_j = g_1 \cdot \mu_j$
     let mut a: Vec<G1> = sign_aggr
         .mus()
         .iter()
@@ -450,6 +453,7 @@ mod tests {
             assert!(eval(&pp, &program, vec![sh.clone(), sh]).is_err());
         }
     }
+
     mod verify_tests {
 
         use super::*;

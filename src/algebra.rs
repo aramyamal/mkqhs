@@ -1,8 +1,8 @@
 use ark_bls12_381::{Bls12_381, Fr, G1Projective, G2Projective, g1::Config as G1Config};
 use ark_ec::AffineRepr;
 use ark_ec::hashing::curve_maps::wb::WBMap;
-use ark_ec::{PrimeGroup, pairing::Pairing};
 use ark_ec::hashing::{HashToCurve, map_to_curve_hasher::MapToCurveBasedHasher};
+use ark_ec::{PrimeGroup, pairing::Pairing};
 use ark_ff::field_hashers::DefaultFieldHasher;
 use sha2::Sha256;
 
@@ -20,7 +20,6 @@ pub fn g1_gen() -> G1 {
 pub fn g2_gen() -> G2 {
     G2::generator()
 }
-
 
 pub fn pairing(a: &G1, b: &G2) -> GT {
     Bls12_381::pairing(a, b).0

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    algebra::{G1, GT, Scalar, g1_gen, g1_zero, g2_gen, gt_one, hash_to_g1_with, pairing},
+    algebra::{G1, GT, Scalar, g1_gen, g2_gen, hash_to_g1_with, pairing},
     errors::ProtocolError,
     params::Params,
     types::{Id, Label, LabeledProgram, PublicKey, SecretKey, SignAggr, SignShare},
 };
 
+use ark_bls12_381::Bls12_381;
+use ark_ec::{CurveGroup, VariableBaseMSM, pairing::Pairing};
 use ark_std::{UniformRand, Zero, rand::RngCore};
 
 pub fn keygen<const K: usize, R: RngCore>(
@@ -79,13 +81,8 @@ pub fn eval<const K: usize>(
         ));
     }
 
-    // TODO: research MSM (multi-scalar multiplication) to be used here instead
-    // for performance gain (`ark_ec::msm` or `ark_ec::VariableBaseMSM`).
-    // in particular do criterion benchmark test to see difference also
-    let gamma: G1 = coeffs
-        .iter()
-        .zip(sign_shares.iter())
-        .fold(g1_zero(), |acc, (f, share)| acc + *share.gamma() * f);
+    let gamma_bases: Vec<_> = sign_shares.iter().map(|s| s.gamma().into_affine()).collect();
+    let gamma = G1::msm_unchecked(&gamma_bases, coeffs);
 
     let (ord_ids, groups) = organize(labels);
 
@@ -124,42 +121,38 @@ pub fn verify<const K: usize>(
         .map(|mu_j| g1_gen() * *mu_j)
         .collect();
 
-    // single pass: A[j] += f_i * H(label_i)
+    // per-group MSM: collect bases and scalars for each signer group
+    let n_groups = ord_ids.len();
+    let mut msm_bases: Vec<Vec<_>> = vec![Vec::new(); n_groups];
+    let mut msm_scalars: Vec<Vec<Scalar>> = vec![Vec::new(); n_groups];
     for (i, lab) in program.labels().iter().enumerate() {
         let j = *id_to_j.get(&lab.id()).ok_or_else(|| {
             ProtocolError::InvalidInput("program label id not in signature ord_ids".to_string())
         })?;
-
         let f_i = program.coeffs()[i];
         if f_i.is_zero() {
             continue;
         }
-
         let h_i = hash_to_g1_with(pp.h2g1_label(), &lab.to_bytes())?;
-        // TODO: switch to MSM here also, but seems more tricky. also bench diff
-        a[j] += h_i * f_i;
+        msm_bases[j].push(h_i.into_affine());
+        msm_scalars[j].push(f_i);
+    }
+    for j in 0..n_groups {
+        if !msm_bases[j].is_empty() {
+            a[j] += G1::msm_unchecked(&msm_bases[j], &msm_scalars[j]);
+        }
     }
 
-    let c: GT = ord_ids.iter().enumerate().try_fold(
-        gt_one(),
-        |acc, (j, id_j)| -> Result<GT, ProtocolError> {
-            let pk = pks.get(id_j).ok_or_else(|| {
-                ProtocolError::InvalidInput("missing public key for ord_id".to_string())
-            })?;
-            Ok(acc * pairing(&a[j], pk.value()))
-        },
-    )?;
-
-    // TODO: maybe switch to using `product_of_pairing` from arkworks for
-    // performance gain. in particular do criterion benchmark test to see diff
-    // ```
-    // let g1_points: Vec<_> = a.iter().collect();
-    // let g2_points: Vec<_> = ord_ids
-    //     .iter()
-    //     .map(|id| pks.get(id).unwrap().value())
-    //     .collect();
-    // let c = product_of_pairing(&g1_points, &g2_points);
-    // ```
+    // collect G1/G2 affine points then call multi_pairing
+    let mut g2_pts = Vec::with_capacity(n_groups);
+    for id_j in ord_ids.iter() {
+        let pk = pks.get(id_j).ok_or_else(|| {
+            ProtocolError::InvalidInput("missing public key for ord_id".to_string())
+        })?;
+        g2_pts.push(pk.value().into_affine());
+    }
+    let g1_pts: Vec<_> = a.iter().map(|p| p.into_affine()).collect();
+    let c: GT = Bls12_381::multi_pairing(g1_pts, g2_pts).0;
 
     let lhs: GT = pairing(sign_aggr.gamma(), &g2_gen());
 

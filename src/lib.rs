@@ -16,3 +16,4 @@ pub mod mk_br_qhs1_msq;
 pub mod mk_br_qhs2;
 pub mod mk_br_qhs2_msq;
 pub mod mk_lhs;
+pub mod testing;

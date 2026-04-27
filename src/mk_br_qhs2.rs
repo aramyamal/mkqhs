@@ -20,7 +20,9 @@ pub fn eval<const K: usize, const R: usize>(
     _program: &QuadProgram<K, R>,
     _sign_shares: Vec<SignShare<K>>,
 ) -> Result<QuadEvalSig2<K, R>, ProtocolError> {
-    todo!("mk-br-qhs2 eval: same gamma as qhs1, then H_FS compression of per-id quadratic components")
+    todo!(
+        "mk-br-qhs2 eval: same gamma as qhs1, then H_FS compression of per-id quadratic components"
+    )
 }
 
 pub fn verify<const K: usize, const R: usize>(

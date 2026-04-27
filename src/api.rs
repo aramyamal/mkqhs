@@ -6,3 +6,5 @@ pub use crate::mk_lhs;
 
 /// keygen is scheme-agnostic, i.e. all schemes share the same key generation.
 pub use crate::mk_lhs::keygen;
+
+pub use crate::algebra::Scalar;

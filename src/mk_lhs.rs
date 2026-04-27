@@ -4,7 +4,7 @@ use crate::{
     algebra::{G1, GT, Scalar, g1_gen, g2_gen, hash_to_g1_with, pairing},
     errors::ProtocolError,
     params::Params,
-    types::{Id, Label, LabeledProgram, PublicKey, SecretKey, SignAggr, SignShare},
+    types::{Id, Label, LabeledProgram, PublicKey, SecretKey, SignAggr, SignShare, organize},
 };
 
 use ark_bls12_381::Bls12_381;
@@ -47,26 +47,6 @@ pub fn sign<const K: usize>(
     Ok(SignShare::new(sk.id(), gamma, msg))
 }
 
-fn organize<const K: usize>(labels: &[Label<K>]) -> (Vec<Id<K>>, Vec<Vec<usize>>) {
-    let mut ord_ids: Vec<Id<K>> = Vec::new();
-    let mut groups: Vec<Vec<usize>> = Vec::new();
-    let mut id_to_idx: HashMap<Id<K>, usize> = HashMap::with_capacity(labels.len());
-
-    // O(n) pass to build all
-    for (i, lab) in labels.iter().enumerate() {
-        let id = lab.id();
-        let j = *id_to_idx.entry(id).or_insert_with(|| {
-            let j = ord_ids.len();
-            ord_ids.push(id);
-            groups.push(Vec::new());
-            j
-        });
-        groups[j].push(i);
-    }
-
-    (ord_ids, groups)
-}
-
 pub fn eval<const K: usize>(
     _pp: &Params<K>,
     program: &LabeledProgram<K>,
@@ -87,14 +67,14 @@ pub fn eval<const K: usize>(
         .collect();
     let gamma = G1::msm_unchecked(&gamma_bases, coeffs);
 
-    let (ord_ids, groups) = organize(labels);
+    let (_, groups) = organize(labels);
 
     let mus: Vec<Scalar> = groups
         .iter()
         .map(|idxs| idxs.iter().map(|&i| coeffs[i] * sign_shares[i].mu()).sum())
         .collect();
 
-    SignAggr::new(gamma, ord_ids, mus)
+    Ok(SignAggr::new(gamma, mus))
 }
 
 pub fn verify<const K: usize>(
@@ -111,7 +91,7 @@ pub fn verify<const K: usize>(
     }
 
     // create id to index table
-    let ord_ids = sign_aggr.ord_ids();
+    let (ord_ids, _) = organize(program.labels());
     let mut id_to_j: HashMap<Id<K>, usize> = HashMap::with_capacity(ord_ids.len());
     for (j, &id) in ord_ids.iter().enumerate() {
         id_to_j.insert(id, j);
@@ -130,7 +110,7 @@ pub fn verify<const K: usize>(
     let mut msm_scalars: Vec<Vec<Scalar>> = vec![Vec::new(); n_groups];
     for (i, lab) in program.labels().iter().enumerate() {
         let j = *id_to_j.get(&lab.id()).ok_or_else(|| {
-            ProtocolError::InvalidInput("program label id not in signature ord_ids".to_string())
+            ProtocolError::InvalidInput("program label id not in signer groups".to_string())
         })?;
         let f_i = program.coeffs()[i];
         if f_i.is_zero() {
@@ -270,8 +250,6 @@ mod tests {
 
             // gamma should match share.gamma (since coeff=1)
             assert_eq!(aggr.gamma(), share.gamma());
-            // ord_ids should contain just that signer
-            assert_eq!(aggr.ord_ids(), &[sk.id()]);
             // mu list should contain just msg
             assert_eq!(aggr.mus(), &[msg]);
         }
@@ -279,7 +257,7 @@ mod tests {
         #[test]
         fn single_user_weighted_sum() {
             // one user, 3 messages, coeffs = [2, 3, 5]
-            // expected: gamma = γ1*2 + γ2*3 + γ3*5, mu = 2*m1 + 3*m2 + 5*m3
+            // expected: gamma = gamma1*2 + gamma2*3 + gamma3*5, mu = 2*m1 + 3*m2 + 5*m3
             const K: usize = 8;
             let pp = Params::<K>::new();
             let mut rng = test_rng();
@@ -300,10 +278,6 @@ mod tests {
 
             let program = LabeledProgram::new(coeffs.clone(), labels).unwrap();
             let aggr = eval(&pp, &program, shares.clone()).unwrap();
-
-            // Only one signer
-            assert_eq!(aggr.ord_ids().len(), 1);
-            assert_eq!(aggr.ord_ids()[0], sk.id());
 
             // mu should equal weighted sum of messages
             let expected_mu: Scalar = coeffs.iter().zip(msgs.iter()).map(|(f, m)| *f * *m).sum();
@@ -339,11 +313,6 @@ mod tests {
             let coeffs = vec![Scalar::from(1), Scalar::from(1)];
             let program = LabeledProgram::new(coeffs, vec![lab_a, lab_b]).unwrap();
             let aggr = eval(&pp, &program, vec![sh_a.clone(), sh_b.clone()]).unwrap();
-
-            // two different signers
-            assert_eq!(aggr.ord_ids().len(), 2);
-            assert_eq!(aggr.ord_ids()[0], sk_a.id());
-            assert_eq!(aggr.ord_ids()[1], sk_b.id());
 
             // gamma should be the sum of gammas (coeff=1)
             assert_eq!(*aggr.gamma(), *sh_a.gamma() + *sh_b.gamma());
@@ -383,11 +352,6 @@ mod tests {
             let program = LabeledProgram::new(coeffs.clone(), vec![lab1, lab2, lab3]).unwrap();
             let aggr = eval(&pp, &program, vec![sh1.clone(), sh2.clone(), sh3.clone()]).unwrap();
 
-            // ord_ids: A first, then B
-            assert_eq!(aggr.ord_ids().len(), 2);
-            assert_eq!(aggr.ord_ids()[0], sk_a.id());
-            assert_eq!(aggr.ord_ids()[1], sk_b.id());
-
             // mu_A = 2*m1 + 4*m3
             let expected_mu_a = Scalar::from(2) * m1 + Scalar::from(4) * m3;
             assert_eq!(aggr.mus()[0], expected_mu_a);
@@ -396,7 +360,7 @@ mod tests {
             let expected_mu_b = Scalar::from(3) * m2;
             assert_eq!(aggr.mus()[1], expected_mu_b);
 
-            // gamma = 2*γ1 + 3*γ2 + 4*γ3
+            // gamma = 2*gamma1 + 3*gamma2 + 4*gamma3
             let expected_gamma = *sh1.gamma() * Scalar::from(2)
                 + *sh2.gamma() * Scalar::from(3)
                 + *sh3.gamma() * Scalar::from(4);

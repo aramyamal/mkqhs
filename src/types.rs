@@ -1,11 +1,33 @@
+use std::collections::HashMap;
+
 use crate::{
     algebra::{G1, G2, Scalar},
     errors::ProtocolError,
 };
 
+/// group label indices by signer identity; preserves first-seen order of ids.
+pub(crate) fn organize<const K: usize>(labels: &[Label<K>]) -> (Vec<Id<K>>, Vec<Vec<usize>>) {
+    let mut ord_ids: Vec<Id<K>> = Vec::new();
+    let mut groups: Vec<Vec<usize>> = Vec::new();
+    let mut id_to_idx: HashMap<Id<K>, usize> = HashMap::with_capacity(labels.len());
+
+    for (i, lab) in labels.iter().enumerate() {
+        let id = lab.id();
+        let j = *id_to_idx.entry(id).or_insert_with(|| {
+            let j = ord_ids.len();
+            ord_ids.push(id);
+            groups.push(Vec::new());
+            j
+        });
+        groups[j].push(i);
+    }
+
+    (ord_ids, groups)
+}
+
 // ── Shared across all schemes ──────────────────────────────────────────────
 
-/// Identity element $\textsf{id} \in \textsf{ID} \subset \{0,1\}^{8K}$
+/// Identity element $\mathsf{id} \in \mathsf{ID} \subset \{0,1\}^{8K}$
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub struct Id<const K: usize>(pub [u8; K]);
 
@@ -90,7 +112,7 @@ impl<const K: usize> PublicKey<K> {
 
 // ── mk-lhs ────────────────────────────────────────────────────────────────
 
-/// Individual signature share $\sigma_i = (\textsf{id}_i, \gamma_i, \mu_i)$.
+/// Individual signature share $\sigma_i = (\mathsf{id}_i, \gamma_i, \mu_i)$.
 #[derive(Clone, Debug)]
 pub struct SignShare<const K: usize> {
     id: Id<K>,
@@ -146,34 +168,20 @@ impl<const K: usize> LabeledProgram<K> {
     }
 }
 
-/// Aggregated evaluated signature $\tilde\sigma = (\gamma, \{\mu_\textsf{id}\})$ for mk-lhs.
+/// Aggregated evaluated signature $\tilde\sigma = (\gamma, \{\mu_{\mathsf{id}}\})$ for mk-lhs.
 #[derive(Clone, Debug)]
 pub struct SignAggr<const K: usize> {
     gamma: G1,
-    ord_ids: Vec<Id<K>>,
     mus: Vec<Scalar>,
 }
 
 impl<const K: usize> SignAggr<K> {
-    pub fn new(gamma: G1, ord_ids: Vec<Id<K>>, mus: Vec<Scalar>) -> Result<Self, ProtocolError> {
-        if ord_ids.len() != mus.len() {
-            return Err(ProtocolError::InvalidInput(
-                "ord_ids/mus length mismatch".to_string(),
-            ));
-        }
-        Ok(Self {
-            gamma,
-            ord_ids,
-            mus,
-        })
+    pub fn new(gamma: G1, mus: Vec<Scalar>) -> Self {
+        Self { gamma, mus }
     }
 
     pub const fn gamma(&self) -> &G1 {
         &self.gamma
-    }
-
-    pub fn ord_ids(&self) -> &[Id<K>] {
-        &self.ord_ids
     }
 
     pub fn mus(&self) -> &[Scalar] {
@@ -246,15 +254,14 @@ impl<const K: usize, const R: usize> QuadProgram<K, R> {
 
 /// Evaluated signature for mk-br-qhs1 (baseline, O(tR) size).
 ///
-/// $\tilde\sigma = (\tilde\gamma, \{\tilde\mu_\textsf{id}\})$ where
+/// $\tilde\sigma = (\tilde\gamma, \{\tilde\mu_{\mathsf{id}}\})$ where
 /// $\tilde\gamma = (\gamma^{(a)}, \{\gamma_r^{(u)}, \gamma_r^{(v)}\}_{r=1}^R)$ and
-/// $\tilde\mu_\textsf{id} = (\mu_\textsf{id}^{(a)}, \boldsymbol\mu_\textsf{id}^{(u)}, \boldsymbol\mu_\textsf{id}^{(v)})$.
+/// $\tilde\mu_{\mathsf{id}} = (\mu_{\mathsf{id}}^{(a)}, \boldsymbol\mu_{\mathsf{id}}^{(u)}, \boldsymbol\mu_{\mathsf{id}}^{(v)})$.
 #[derive(Clone, Debug)]
 pub struct QuadEvalSig1<const K: usize, const R: usize> {
     gamma_a: G1,
-    gamma_u: Vec<G1>, // len R
-    gamma_v: Vec<G1>, // len R
-    ord_ids: Vec<Id<K>>,
+    gamma_u: [G1; R],
+    gamma_v: [G1; R],
     mu_a: Vec<Scalar>,      // len t
     mu_u: Vec<[Scalar; R]>, // t × R
     mu_v: Vec<[Scalar; R]>, // t × R
@@ -263,20 +270,13 @@ pub struct QuadEvalSig1<const K: usize, const R: usize> {
 impl<const K: usize, const R: usize> QuadEvalSig1<K, R> {
     pub fn new(
         gamma_a: G1,
-        gamma_u: Vec<G1>,
-        gamma_v: Vec<G1>,
-        ord_ids: Vec<Id<K>>,
+        gamma_u: [G1; R],
+        gamma_v: [G1; R],
         mu_a: Vec<Scalar>,
         mu_u: Vec<[Scalar; R]>,
         mu_v: Vec<[Scalar; R]>,
     ) -> Result<Self, ProtocolError> {
-        let t = ord_ids.len();
-        if gamma_u.len() != R
-            || gamma_v.len() != R
-            || mu_a.len() != t
-            || mu_u.len() != t
-            || mu_v.len() != t
-        {
+        if mu_u.len() != mu_a.len() || mu_v.len() != mu_a.len() {
             return Err(ProtocolError::InvalidInput(
                 "QuadEvalSig1 length mismatch".to_string(),
             ));
@@ -285,7 +285,6 @@ impl<const K: usize, const R: usize> QuadEvalSig1<K, R> {
             gamma_a,
             gamma_u,
             gamma_v,
-            ord_ids,
             mu_a,
             mu_u,
             mu_v,
@@ -295,14 +294,11 @@ impl<const K: usize, const R: usize> QuadEvalSig1<K, R> {
     pub fn gamma_a(&self) -> &G1 {
         &self.gamma_a
     }
-    pub fn gamma_u(&self) -> &[G1] {
+    pub fn gamma_u(&self) -> &[G1; R] {
         &self.gamma_u
     }
-    pub fn gamma_v(&self) -> &[G1] {
+    pub fn gamma_v(&self) -> &[G1; R] {
         &self.gamma_v
-    }
-    pub fn ord_ids(&self) -> &[Id<K>] {
-        &self.ord_ids
     }
     pub fn mu_a(&self) -> &[Scalar] {
         &self.mu_a
@@ -317,14 +313,13 @@ impl<const K: usize, const R: usize> QuadEvalSig1<K, R> {
 
 /// Evaluated signature for mk-br-qhs2 (compressed, O(t + R) size).
 ///
-/// $\tilde\sigma = (\tilde\gamma, \{\tilde\mu_\textsf{id}\}, \boldsymbol\mu^{(u)}, \boldsymbol\mu^{(v)})$ where
-/// $\tilde\mu_\textsf{id} = (\mu_\textsf{id}^{(a)}, \tilde\mu_\textsf{id}^{(u,v)})$.
+/// $\tilde\sigma = (\tilde\gamma, \{\tilde\mu_{\mathsf{id}}\}, \boldsymbol\mu^{(u)}, \boldsymbol\mu^{(v)})$ where
+/// $\tilde\mu_{\mathsf{id}} = (\mu_{\mathsf{id}}^{(a)}, \tilde\mu_{\mathsf{id}}^{(u,v)})$.
 #[derive(Clone, Debug)]
 pub struct QuadEvalSig2<const K: usize, const R: usize> {
     gamma_a: G1,
-    gamma_u: Vec<G1>, // len R
-    gamma_v: Vec<G1>, // len R
-    ord_ids: Vec<Id<K>>,
+    gamma_u: [G1; R],
+    gamma_v: [G1; R],
     mu_a: Vec<Scalar>,  // len t
     mu_uv: Vec<Scalar>, // len t — compressed per-id quadratic component
     mu_u_global: [Scalar; R],
@@ -334,16 +329,14 @@ pub struct QuadEvalSig2<const K: usize, const R: usize> {
 impl<const K: usize, const R: usize> QuadEvalSig2<K, R> {
     pub fn new(
         gamma_a: G1,
-        gamma_u: Vec<G1>,
-        gamma_v: Vec<G1>,
-        ord_ids: Vec<Id<K>>,
+        gamma_u: [G1; R],
+        gamma_v: [G1; R],
         mu_a: Vec<Scalar>,
         mu_uv: Vec<Scalar>,
         mu_u_global: [Scalar; R],
         mu_v_global: [Scalar; R],
     ) -> Result<Self, ProtocolError> {
-        let t = ord_ids.len();
-        if gamma_u.len() != R || gamma_v.len() != R || mu_a.len() != t || mu_uv.len() != t {
+        if mu_uv.len() != mu_a.len() {
             return Err(ProtocolError::InvalidInput(
                 "QuadEvalSig2 length mismatch".to_string(),
             ));
@@ -352,7 +345,6 @@ impl<const K: usize, const R: usize> QuadEvalSig2<K, R> {
             gamma_a,
             gamma_u,
             gamma_v,
-            ord_ids,
             mu_a,
             mu_uv,
             mu_u_global,
@@ -363,14 +355,11 @@ impl<const K: usize, const R: usize> QuadEvalSig2<K, R> {
     pub fn gamma_a(&self) -> &G1 {
         &self.gamma_a
     }
-    pub fn gamma_u(&self) -> &[G1] {
+    pub fn gamma_u(&self) -> &[G1; R] {
         &self.gamma_u
     }
-    pub fn gamma_v(&self) -> &[G1] {
+    pub fn gamma_v(&self) -> &[G1; R] {
         &self.gamma_v
-    }
-    pub fn ord_ids(&self) -> &[Id<K>] {
-        &self.ord_ids
     }
     pub fn mu_a(&self) -> &[Scalar] {
         &self.mu_a
@@ -389,9 +378,9 @@ impl<const K: usize, const R: usize> QuadEvalSig2<K, R> {
 // ── Message-squares variants ───────────────────────────────────────────────
 
 /// Signature share with message-squares component:
-/// $\sigma_i = (\textsf{id}_i, \gamma_i, \gamma_i', \mu_i)$ where
-/// $\gamma_i = (H_1(\ell_i) \cdot g_1^{m_i})^\textsf{sk}$ and
-/// $\gamma_i' = (H_2(\ell_i) \cdot g_1^{m_i^2})^\textsf{sk}$.
+/// $\sigma_i = (\mathsf{id}_i, \gamma_i, \gamma_i', \mu_i)$ where
+/// $\gamma_i = (H_1(\ell_i) \cdot g_1^{m_i})^{\mathsf{sk}}$ and
+/// $\gamma_i' = (H_2(\ell_i) \cdot g_1^{m_i^2})^{\mathsf{sk}}$.
 #[derive(Clone, Debug)]
 pub struct SignShareMsq<const K: usize> {
     id: Id<K>,
@@ -424,8 +413,8 @@ impl<const K: usize> SignShareMsq<K> {
     }
 }
 
-/// Labeled quadratic program with message-squares coefficients bᵢ:
-/// f = {aᵢ, bᵢ, u⃗ᵢ, v⃗ᵢ}.
+/// Labeled quadratic program with message-squares coefficients $b_i$:
+/// $f = \{a_i, b_i, \mathbf{u}_i, \mathbf{v}_i\}$.
 #[derive(Clone, Debug)]
 pub struct QuadProgramMsq<const K: usize, const R: usize> {
     a: Vec<Scalar>,
@@ -478,9 +467,8 @@ impl<const K: usize, const R: usize> QuadProgramMsq<K, R> {
 #[derive(Clone, Debug)]
 pub struct QuadEvalSig1Msq<const K: usize, const R: usize> {
     gamma_ab: G1,
-    gamma_u: Vec<G1>, // len R
-    gamma_v: Vec<G1>, // len R
-    ord_ids: Vec<Id<K>>,
+    gamma_u: [G1; R],
+    gamma_v: [G1; R],
     mu_ab: Vec<Scalar>,     // len t
     mu_u: Vec<[Scalar; R]>, // t × R
     mu_v: Vec<[Scalar; R]>, // t × R
@@ -489,20 +477,13 @@ pub struct QuadEvalSig1Msq<const K: usize, const R: usize> {
 impl<const K: usize, const R: usize> QuadEvalSig1Msq<K, R> {
     pub fn new(
         gamma_ab: G1,
-        gamma_u: Vec<G1>,
-        gamma_v: Vec<G1>,
-        ord_ids: Vec<Id<K>>,
+        gamma_u: [G1; R],
+        gamma_v: [G1; R],
         mu_ab: Vec<Scalar>,
         mu_u: Vec<[Scalar; R]>,
         mu_v: Vec<[Scalar; R]>,
     ) -> Result<Self, ProtocolError> {
-        let t = ord_ids.len();
-        if gamma_u.len() != R
-            || gamma_v.len() != R
-            || mu_ab.len() != t
-            || mu_u.len() != t
-            || mu_v.len() != t
-        {
+        if mu_u.len() != mu_ab.len() || mu_v.len() != mu_ab.len() {
             return Err(ProtocolError::InvalidInput(
                 "QuadEvalSig1Msq length mismatch".to_string(),
             ));
@@ -511,7 +492,6 @@ impl<const K: usize, const R: usize> QuadEvalSig1Msq<K, R> {
             gamma_ab,
             gamma_u,
             gamma_v,
-            ord_ids,
             mu_ab,
             mu_u,
             mu_v,
@@ -521,14 +501,11 @@ impl<const K: usize, const R: usize> QuadEvalSig1Msq<K, R> {
     pub fn gamma_ab(&self) -> &G1 {
         &self.gamma_ab
     }
-    pub fn gamma_u(&self) -> &[G1] {
+    pub fn gamma_u(&self) -> &[G1; R] {
         &self.gamma_u
     }
-    pub fn gamma_v(&self) -> &[G1] {
+    pub fn gamma_v(&self) -> &[G1; R] {
         &self.gamma_v
-    }
-    pub fn ord_ids(&self) -> &[Id<K>] {
-        &self.ord_ids
     }
     pub fn mu_ab(&self) -> &[Scalar] {
         &self.mu_ab
@@ -546,9 +523,8 @@ impl<const K: usize, const R: usize> QuadEvalSig1Msq<K, R> {
 #[derive(Clone, Debug)]
 pub struct QuadEvalSig2Msq<const K: usize, const R: usize> {
     gamma_ab: G1,
-    gamma_u: Vec<G1>, // len R
-    gamma_v: Vec<G1>, // len R
-    ord_ids: Vec<Id<K>>,
+    gamma_u: [G1; R],
+    gamma_v: [G1; R],
     mu_ab: Vec<Scalar>, // len t
     mu_uv: Vec<Scalar>, // len t
     mu_u_global: [Scalar; R],
@@ -558,16 +534,14 @@ pub struct QuadEvalSig2Msq<const K: usize, const R: usize> {
 impl<const K: usize, const R: usize> QuadEvalSig2Msq<K, R> {
     pub fn new(
         gamma_ab: G1,
-        gamma_u: Vec<G1>,
-        gamma_v: Vec<G1>,
-        ord_ids: Vec<Id<K>>,
+        gamma_u: [G1; R],
+        gamma_v: [G1; R],
         mu_ab: Vec<Scalar>,
         mu_uv: Vec<Scalar>,
         mu_u_global: [Scalar; R],
         mu_v_global: [Scalar; R],
     ) -> Result<Self, ProtocolError> {
-        let t = ord_ids.len();
-        if gamma_u.len() != R || gamma_v.len() != R || mu_ab.len() != t || mu_uv.len() != t {
+        if mu_uv.len() != mu_ab.len() {
             return Err(ProtocolError::InvalidInput(
                 "QuadEvalSig2Msq length mismatch".to_string(),
             ));
@@ -576,7 +550,6 @@ impl<const K: usize, const R: usize> QuadEvalSig2Msq<K, R> {
             gamma_ab,
             gamma_u,
             gamma_v,
-            ord_ids,
             mu_ab,
             mu_uv,
             mu_u_global,
@@ -587,14 +560,11 @@ impl<const K: usize, const R: usize> QuadEvalSig2Msq<K, R> {
     pub fn gamma_ab(&self) -> &G1 {
         &self.gamma_ab
     }
-    pub fn gamma_u(&self) -> &[G1] {
+    pub fn gamma_u(&self) -> &[G1; R] {
         &self.gamma_u
     }
-    pub fn gamma_v(&self) -> &[G1] {
+    pub fn gamma_v(&self) -> &[G1; R] {
         &self.gamma_v
-    }
-    pub fn ord_ids(&self) -> &[Id<K>] {
-        &self.ord_ids
     }
     pub fn mu_ab(&self) -> &[Scalar] {
         &self.mu_ab

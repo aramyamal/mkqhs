@@ -5,14 +5,16 @@ use ark_std::{UniformRand, test_rng};
 
 use mklhs::{
     api::Scalar,
-    mk_br_qhs1_msq::sign,
-    mk_lhs::keygen,
+    mk_brq_hs1_msq::sign,
+    mk_l_hs::keygen,
     params::Params,
     testing::{MsqScheme, Qhs1Msq, Qhs2Msq},
     types::{Label, QuadProgramMsq, Tag},
 };
 
 const K: usize = 8;
+
+// TODO: Add tests for forgeries that pass the sum checks but not the pairing checks
 
 fn rand_tag<R: ark_std::rand::RngCore>(rng: &mut R) -> Tag<K> {
     let mut b = [0u8; K];

@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-pub use crate::mk_lhs::keygen;
+pub use crate::mk_l_hs::keygen;
 
 pub fn sign<const K: usize>(
     pp: &Params<K>,

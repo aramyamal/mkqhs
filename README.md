@@ -12,11 +12,11 @@ ongoing thesis. Extends the baseline `mklhs` scheme of Aranha and Pagnin
 
 | Module           | Scheme                                                         | Status      |
 | ---------------- | -------------------------------------------------------------- | ----------- |
-| `mk_lhs`         | Multi-key linearly homomorphic signatures (Aranha–Pagnin 2019) | implemented |
-| `mk_br_qhs1`     | Bounded-rank quadratic, baseline O(tR) signature size          | skeleton    |
-| `mk_br_qhs2`     | Bounded-rank quadratic, compressed O(t+R) via Fiat–Shamir      | skeleton    |
-| `mk_br_qhs1_msq` | `mk_br_qhs1` with message-squares extension                    | implemented |
-| `mk_br_qhs2_msq` | `mk_br_qhs2` with message-squares extension                    | implemented |
+| `mk_l_hs`        | Multi-key linearly homomorphic signatures (Aranha–Pagnin 2019) | implemented |
+| `mk_brq_hs1`     | Bounded-rank quadratic, baseline O(tR) signature size          | skeleton    |
+| `mk_brq_hs2`     | Bounded-rank quadratic, compressed O(t+R) via Fiat–Shamir      | skeleton    |
+| `mk_brq_hs1_msq` | `mk_brq_hs1` with message-squares extension                    | implemented |
+| `mk_brq_hs2_msq` | `mk_brq_hs2` with message-squares extension                    | implemented |
 
 ## Based on
 

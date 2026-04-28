@@ -15,8 +15,8 @@ use ark_serialize::CanonicalSerialize;
 use ark_std::Zero;
 use sha2::{Digest, Sha256};
 
-pub use crate::mk_br_qhs1_msq::sign;
-pub use crate::mk_lhs::keygen;
+pub use crate::mk_brq_hs1_msq::sign;
+pub use crate::mk_l_hs::keygen;
 
 use crate::{
     algebra::{G1, GT, Scalar, g1_gen, g2_gen, hash_to_g1_with, pairing},
@@ -25,7 +25,7 @@ use crate::{
     types::{Id, PublicKey, QuadEvalSig2Msq, QuadProgramMsq, SignShareMsq, organize},
 };
 
-/// Fiat-Shamir hash H_FS.  Serialises all public inputs to bytes and derives
+/// Fiat-Shamir hash H_FS. Serialises all public inputs to bytes and derives
 /// 2R scalars via SHA-256.
 fn h_fs<const K: usize, const R: usize>(
     program: &QuadProgramMsq<K, R>,

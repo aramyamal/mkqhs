@@ -45,7 +45,7 @@ impl<const K: usize, const R: usize> MsqScheme<K, R> for Qhs1Msq {
         program: &QuadProgramMsq<K, R>,
         shares: Vec<SignShareMsq<K>>,
     ) -> Result<Self::Sig, ProtocolError> {
-        crate::mk_brq_hs1_msq::eval(pp, program, shares)
+        crate::mkqhs_br_msq::eval(pp, program, shares)
     }
 
     fn verify(
@@ -55,7 +55,7 @@ impl<const K: usize, const R: usize> MsqScheme<K, R> for Qhs1Msq {
         msg: Scalar,
         sig: &Self::Sig,
     ) -> Result<bool, ProtocolError> {
-        crate::mk_brq_hs1_msq::verify(pp, program, pks, msg, sig)
+        crate::mkqhs_br_msq::verify(pp, program, pks, msg, sig)
     }
 }
 
@@ -67,7 +67,7 @@ impl<const K: usize, const R: usize> MsqScheme<K, R> for Qhs2Msq {
         program: &QuadProgramMsq<K, R>,
         shares: Vec<SignShareMsq<K>>,
     ) -> Result<Self::Sig, ProtocolError> {
-        crate::mk_brq_hs2_msq::eval(pp, program, shares)
+        crate::mkqhs_cbr_msq::eval(pp, program, shares)
     }
 
     fn verify(
@@ -77,6 +77,6 @@ impl<const K: usize, const R: usize> MsqScheme<K, R> for Qhs2Msq {
         msg: Scalar,
         sig: &Self::Sig,
     ) -> Result<bool, ProtocolError> {
-        crate::mk_brq_hs2_msq::verify(pp, program, pks, msg, sig)
+        crate::mkqhs_cbr_msq::verify(pp, program, pks, msg, sig)
     }
 }

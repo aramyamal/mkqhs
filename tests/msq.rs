@@ -5,8 +5,8 @@ use ark_std::{UniformRand, test_rng};
 
 use mklhs::{
     api::Scalar,
-    mk_brq_hs1_msq::sign,
-    mk_l_hs::keygen,
+    mklhs::keygen,
+    mkqhs_br_msq::sign,
     params::Params,
     testing::{MsqScheme, Qhs1Msq, Qhs2Msq},
     types::{Label, QuadProgramMsq, Tag},

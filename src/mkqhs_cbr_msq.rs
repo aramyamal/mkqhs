@@ -15,8 +15,8 @@ use ark_serialize::CanonicalSerialize;
 use ark_std::Zero;
 use sha2::{Digest, Sha256};
 
-pub use crate::mk_brq_hs1_msq::sign;
-pub use crate::mk_l_hs::keygen;
+pub use crate::mklhs::keygen;
+pub use crate::mkqhs_br_msq::sign;
 
 use crate::{
     algebra::{G1, GT, Scalar, g1_gen, g2_gen, hash_to_g1_with, pairing},

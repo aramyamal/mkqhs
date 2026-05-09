@@ -13,6 +13,22 @@ pub type G1 = G1Projective;
 pub type G2 = G2Projective;
 pub type GT = <Bls12_381 as Pairing>::TargetField;
 
+pub fn scalar_zero() -> Scalar {
+    use ark_ff::Zero;
+    Scalar::zero()
+}
+
+pub fn scalar_inverse(s: &Scalar) -> Option<Scalar> {
+    use ark_ff::Field;
+    s.inverse()
+}
+
+pub fn scalar_to_u64(s: &Scalar) -> Option<u64> {
+    use ark_ff::PrimeField;
+    let b = s.into_bigint();
+    Some(b.0[0])
+}
+
 pub fn g1_gen() -> G1 {
     G1::generator()
 }

@@ -11,9 +11,9 @@ pub mod errors;
 pub mod params;
 pub mod types;
 
-pub mod mk_brq_hs1;
-pub mod mk_brq_hs1_msq;
-pub mod mk_brq_hs2;
-pub mod mk_brq_hs2_msq;
-pub mod mk_l_hs;
+pub mod mklhs;
+pub mod mkqhs_br;
+pub mod mkqhs_br_msq;
+pub mod mkqhs_cbr;
+pub mod mkqhs_cbr_msq;
 pub mod testing;

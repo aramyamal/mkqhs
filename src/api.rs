@@ -1,10 +1,10 @@
-pub use crate::mk_brq_hs1;
-pub use crate::mk_brq_hs1_msq;
-pub use crate::mk_brq_hs2;
-pub use crate::mk_brq_hs2_msq;
-pub use crate::mk_l_hs;
+pub use crate::mklhs;
+pub use crate::mkqhs_br;
+pub use crate::mkqhs_br_msq;
+pub use crate::mkqhs_cbr;
+pub use crate::mkqhs_cbr_msq;
 
 /// keygen is scheme-agnostic, i.e. all schemes share the same key generation.
-pub use crate::mk_l_hs::keygen;
+pub use crate::mklhs::keygen;
 
-pub use crate::algebra::Scalar;
+pub use crate::algebra::{Scalar, scalar_inverse, scalar_to_u64, scalar_zero};

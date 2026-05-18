@@ -7,6 +7,10 @@ edition = "2024"
 name = "variance"
 path = "src/variance.rs"
 
+[[bin]]
+name = "euclidean_distance"
+path = "src/euclidean_distance.rs"
+
 [dependencies]
 mklhs = { path = ".." }
 rand = "0.8"

@@ -1,0 +1,13 @@
+[package]
+name = "examples"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "variance"
+path = "src/variance.rs"
+
+[dependencies]
+mklhs = { path = ".." }
+rand = "0.8"
+ureq = "2"

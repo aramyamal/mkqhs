@@ -1,4 +1,4 @@
-# mklhs
+# mkqhs
 
 > **Work in progress.**
 
@@ -26,6 +26,23 @@ ongoing thesis. Extends the baseline `mklhs` scheme of Aranha and Pagnin
 > https://eprint.iacr.org/2019/830
 
 The quadratic schemes are contributions of an ongoing thesis.
+
+## Examples
+
+The `examples/` crate contains runnable demonstrations of the schemes on real data.
+
+```
+cargo example <name>
+```
+
+| Example              | Scheme         | Description                                                                                |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------------ |
+| `variance`           | `mkqhs_br_msq` | Verifiable variance of the diabetes target variable across 10 signers                      |
+| `euclidean_distance` | `mkqhs_br_msq` | Verifiable squared Euclidean distance between two randomly sampled patients (age, bmi, bp) |
+
+### Dataset
+
+Both examples use the [Efron–Hastie diabetes dataset](https://www4.stat.ncsu.edu/~boos/var.select/diabetes.html). On first run the file is downloaded and cached at `examples/data/diabetes.data`.
 
 ## Dependencies
 

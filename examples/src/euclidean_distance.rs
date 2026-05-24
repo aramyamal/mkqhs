@@ -11,7 +11,7 @@ use rand::thread_rng;
 use examples::data::load_diabetes;
 use mklhs::{
     api::{Scalar, keygen, scalar_zero},
-    mkqhs_br_msq::{eval, sign, verify},
+    mkqhs_cbr_msq::{eval, sign, verify},
     params::Params,
     types::{Label, QuadProgramMsq, Tag},
 };
@@ -152,7 +152,7 @@ fn main() {
     println!("──────────────────────────────────────────────────────────");
     println!("||x - y||^2 = {dist_sq_int}");
     println!();
-    println!("── Scheme: mkqhs-br-msq evaluated result ─────────────────");
+    println!("── Scheme: mkqhs-cbr-msq evaluated result ─────────────────");
     println!("Evaluated scalar (BLS12-381 Z_q) = {expected}");
     println!();
     println!("── Checks ────────────────────────────────────────────────");

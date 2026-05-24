@@ -9,7 +9,7 @@
 //!   - \frac{1}{n^2}\!\left(\sum_i y_i\right)^2
 //! $$
 //!
-//! using `mkqhs_br_msq` with rank R=1
+//! using `mkqhs_cbr_msq` with rank R=1
 //!
 //! # Program encoding (R = 1)
 //! | coefficient | value   |
@@ -29,7 +29,7 @@ use rand::thread_rng;
 use examples::data::load_diabetes;
 use mklhs::{
     api::{Scalar, keygen, scalar_inverse, scalar_to_u64, scalar_zero},
-    mkqhs_br_msq::{eval, sign, verify},
+    mkqhs_cbr_msq::{eval, sign, verify},
     params::Params,
     types::{Label, QuadProgramMsq, Tag},
 };

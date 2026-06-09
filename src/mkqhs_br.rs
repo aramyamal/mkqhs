@@ -1,7 +1,9 @@
-//! mk-br-qhs1: baseline bounded-rank quadratic homomorphic signature scheme.
+//! mkqhs-br: baseline bounded-rank quadratic homomorphic signature scheme.
 //!
-//! Eval and Verify as in Figure fig:con1 of the thesis.
-//! Setup, KeyGen, and Sign are from mk-lhs.
+//! Eval and Verify as in Figure 5.2 of the thesis.
+//! Setup, KeyGen, and Sign are from mklhs as in Figure 5.1 of the thesis.
+
+pub use crate::mklhs::keygen;
 
 use std::collections::HashMap;
 
@@ -17,7 +19,7 @@ pub fn eval<const K: usize, const R: usize>(
     _program: &QuadProgram<K, R>,
     _sign_shares: Vec<SignShare<K>>,
 ) -> Result<QuadEvalSig1<K, R>, ProtocolError> {
-    todo!("mk-br-qhs1 eval: MSM for gamma components, per-id mu aggregation")
+    todo!("mkqhs_br eval: MSM for gamma components, per-id mu aggregation")
 }
 
 pub fn verify<const K: usize, const R: usize>(
@@ -27,5 +29,5 @@ pub fn verify<const K: usize, const R: usize>(
     _msg: Scalar,
     _sig: &QuadEvalSig1<K, R>,
 ) -> Result<bool, ProtocolError> {
-    todo!("mk-br-qhs1 verify: ver1 scalar check, ver2 linear pairing, ver3 random-coins pairing")
+    todo!("mkqhs_br verify: ver1 scalar check, ver2 linear pairing, ver3 random-coins pairing")
 }

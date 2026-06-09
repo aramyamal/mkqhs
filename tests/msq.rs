@@ -3,10 +3,9 @@ use std::collections::HashMap;
 use ark_ff::{Field, Zero};
 use ark_std::{UniformRand, test_rng};
 
-use mklhs::{
+use mkqhs::{
     api::Scalar,
-    mklhs::keygen,
-    mkqhs_br_msq::sign,
+    mkqhs_br_msq::{keygen, sign},
     params::Params,
     testing::{MsqScheme, Qhs1Msq, Qhs2Msq},
     types::{Label, QuadProgramMsq, Tag},
@@ -347,5 +346,5 @@ macro_rules! scheme_tests {
     };
 }
 
-scheme_tests!(mk_br_qhs1_msq, Qhs1Msq);
-scheme_tests!(mk_br_qhs2_msq, Qhs2Msq);
+scheme_tests!(mkqhs_br_msq, Qhs1Msq);
+scheme_tests!(mkqhs_cbr_msq, Qhs2Msq);

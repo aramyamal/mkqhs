@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use rand::thread_rng;
 
 use examples::data::load_diabetes;
-use mklhs::{
+use mkqhs::{
     api::{Scalar, keygen, scalar_inverse, scalar_to_u64, scalar_zero},
     mkqhs_cbr_msq::{eval, sign, verify},
     params::Params,

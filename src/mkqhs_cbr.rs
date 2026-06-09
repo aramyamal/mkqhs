@@ -6,6 +6,8 @@
 //!
 //! Setup, KeyGen, and Sign are from mk-lhs (see `mk_lhs::keygen` and `mk_lhs::sign`).
 
+pub use crate::mklhs::keygen;
+
 use std::collections::HashMap;
 
 use crate::{

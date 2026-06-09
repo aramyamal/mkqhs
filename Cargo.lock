@@ -285,7 +285,7 @@ dependencies = [
 name = "examples"
 version = "0.1.0"
 dependencies = [
- "mklhs",
+ "mkqhs",
  "rand",
  "ureq",
 ]
@@ -492,7 +492,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mklhs"
+name = "mkqhs"
 version = "0.1.0"
 dependencies = [
  "ark-bls12-381",

@@ -12,6 +12,6 @@ name = "euclidean_distance"
 path = "src/euclidean_distance.rs"
 
 [dependencies]
-mklhs = { path = ".." }
+mkqhs = { path = ".." }
 rand = "0.8"
 ureq = "2"

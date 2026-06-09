@@ -1,10 +1,10 @@
-//! mk-br-qhs2: compressed bounded-rank quadratic homomorphic signature scheme.
+//! mkqhs-cbr: compressed bounded-rank quadratic homomorphic signature scheme.
 //!
-//! Eval and Verify as in Figure fig:con2 of the thesis.
+//! Eval and Verify as in Figure 6.1 of the thesis.
 //! Reduces evaluated signature size from O(tR) to O(t + R) by compressing per-identity
-//! quadratic components using a Fiat-Shamir hash H_FS.
+//! quadratic components.
 //!
-//! Setup, KeyGen, and Sign are from mk-lhs (see `mk_lhs::keygen` and `mk_lhs::sign`).
+//! Setup, KeyGen, and Sign are from mklhs (Figure 5.1) (see `mklhs::keygen` and `mklhs::sign`).
 
 pub use crate::mklhs::keygen;
 
@@ -23,7 +23,7 @@ pub fn eval<const K: usize, const R: usize>(
     _sign_shares: Vec<SignShare<K>>,
 ) -> Result<QuadEvalSig2<K, R>, ProtocolError> {
     todo!(
-        "mk-br-qhs2 eval: same gamma as qhs1, then H_FS compression of per-id quadratic components"
+        "mkqhs_cbr eval: same gamma as qhs1, then H_FS compression of per-id quadratic components"
     )
 }
 
@@ -34,5 +34,5 @@ pub fn verify<const K: usize, const R: usize>(
     _msg: Scalar,
     _sig: &QuadEvalSig2<K, R>,
 ) -> Result<bool, ProtocolError> {
-    todo!("mk-br-qhs2 verify: ver1-ver4, recompute H_FS, four checks")
+    todo!("mkqhs_cbr verify: ver1-ver4, recompute H_FS, four checks")
 }

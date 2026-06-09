@@ -1,10 +1,10 @@
-//! mk-br-qhs2-msq: message-squares variant of mk-br-qhs2.
+//! mkqhs-cbr-msq: message-squares variant of mkqhs-cbr.
 //!
-//! Eval and Verify as in Figure fig:con2msq of the thesis.
-//! Sign is shared with mk-br-qhs1-msq; use `mk_br_qhs1_msq::sign_msq`.
+//! An extension of mkqhs-br obtained by the compression of mkqhs-cbr and message-squares extension
+//! of mkqhs-br-msq.
 //!
-//! Compared to qhs1-msq, per-id quadratic components are compressed using
-//! a Fiat-Shamir hash H_FS, reducing evaluated signature size from O(tR) to O(t + R).
+//! Compared to mkqhs-br-msq, per-id quadratic components are compressed using
+//! a hash H_FS, reducing evaluated signature size from O(tR) to O(t + R).
 
 use std::collections::HashMap;
 
@@ -25,7 +25,7 @@ use crate::{
     types::{Id, PublicKey, QuadEvalSig2Msq, QuadProgramMsq, SignShareMsq, organize},
 };
 
-/// Fiat-Shamir hash H_FS. Serialises all public inputs to bytes and derives
+/// Hash H_FS. Serialises all public inputs to bytes and derives
 /// 2R scalars via SHA-256.
 fn h_fs<const K: usize, const R: usize>(
     program: &QuadProgramMsq<K, R>,
@@ -165,7 +165,7 @@ pub fn eval<const K: usize, const R: usize>(
         }
     }
 
-    // derive Fiat-Shamir challenge
+    // derive challenge
     // $$
     // (\boldsymbol\rho, \boldsymbol\rho') \gets
     // H_\mathsf{FS}(\mathcal{P}, \tilde\gamma, \{\mu_{\mathsf{id}}^{(a,b)}\}, \boldsymbol\mu^{(u)},

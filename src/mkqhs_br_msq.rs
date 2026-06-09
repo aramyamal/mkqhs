@@ -1,7 +1,7 @@
-//! mk-br-qhs1-msq: message-squares variant of mk-br-qhs1.
+//! mkqhs-br-msq: message-squares variant of mkqhs_br.
 //!
-//! Sign, Eval and Verify as in Figures fig:msq-setup-sign and fig:con1msq of the thesis.
-//! `sign` is also re-exported by mk-br-qhs2-msq.
+//! Sign, Eval and Verify as in Figures 6.2 and 6.3 of the thesis.
+//! `sign` is also re-exported by mkqhs-cbr_msq.
 
 use std::collections::HashMap;
 

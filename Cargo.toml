@@ -2,7 +2,7 @@
 members = [".", "examples"]
 
 [package]
-name = "mklhs"
+name = "mkqhs"
 version = "0.1.0"
 edition = "2024"
 
